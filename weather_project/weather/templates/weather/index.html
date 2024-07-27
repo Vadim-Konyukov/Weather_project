@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Weather App</title>
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+    <style>
+        .autocomplete-suggestions {
+            border: 1px solid #ddd;
+            background: #fff;
+            max-height: 200px;
+            overflow-y: auto;
+            position: absolute;
+            z-index: 1000;
+            width: 100%;
+        }
+        .autocomplete-suggestion {
+            padding: 10px;
+            cursor: pointer;
+        }
+        .autocomplete-suggestion:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Weather Forecast</h1>
+
+        <form name="weatherForm" method="post" onsubmit="return validateForm()">
+            {% csrf_token %}
+            <div style="position: relative;">
+                <input type="text" name="city" id="city-input" placeholder="Enter city" value="{{ city }}">
+                <div id="autocomplete-suggestions" class="autocomplete-suggestions"></div>
+            </div>
+            <button type="submit">Get Weather</button>
+        </form>
+
+        {% if city %}
+            <h2>Weather in {{ city }}</h2>
+        {% endif %}
+
+        {% if weather_data %}
+            <ul>
+                {% for entry in weather_data %}
+                    <li>{{ entry.time }}: {{ entry.temperature }}°C</li>
+                {% endfor %}
+            </ul>
+        {% elif error %}
+            <p>{{ error }}</p>
+        {% endif %}
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var input = document.getElementById('city-input');
+            var suggestionsBox = document.getElementById('autocomplete-suggestions');
+
+            input.addEventListener('input', function() {
+                var query = input.value;
+                if (query.length < 3) {
+                    suggestionsBox.innerHTML = '';
+                    return;
+                }
+
+                fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`)
+                    .then(response => response.json())
+                    .then(data => {
+                        suggestionsBox.innerHTML = '';
+                        if (data.length) {
+                            data.forEach(item => {
+                                var suggestion = document.createElement('div');
+                                suggestion.className = 'autocomplete-suggestion';
+                                suggestion.textContent = item.display_name;
+                                suggestion.addEventListener('click', function() {
+                                    input.value = item.display_name;
+                                    suggestionsBox.innerHTML = '';
+                                });
+                                suggestionsBox.appendChild(suggestion);
+                            });
+                        }
+                    })
+                    .catch(error => console.error('Error fetching data:', error));
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!suggestionsBox.contains(e.target) && e.target !== input) {
+                    suggestionsBox.innerHTML = '';
+                }
+            });
+        });
+
+        function validateForm() {
+            var city = document.forms["weatherForm"]["city"].value;
+            if (city === "" || city.length < 3) {
+                alert("Please enter a valid city name.");
+                return false;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search History</title>
+</head>
+<body>
+    <h1>Search History</h1>
+    <ul>
+        {% for record in history_data %}
+            <li>{{ record.city }} - {{ record.timestamp }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
